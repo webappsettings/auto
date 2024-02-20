@@ -91,17 +91,7 @@ formData.append('status', JSON.stringify({
           }
           return xhr;
         },
-        data: {
-          // Add video metadata here
-          snippet: {
-            title: 'Your Video Title',
-            description: 'Your Video Description'
-          },
-          status: {
-            privacyStatus: 'private'
-          },
-          video: videoFileLocation
-        },
+        data: formData.append('video', videoFileLocation),
         processData: false,
         contentType: false,
         success: function (response) {
