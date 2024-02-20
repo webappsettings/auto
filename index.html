@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Video Upload</title>
+</head>
+<body>
+  <h1>YouTube Video Upload</h1>
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+  <!-- Hidden input field to automatically use the provided video file location -->
+  <input type="file" id="videoInput" >
+  <!-- value="https://p-def7.pcloud.com/cBZkLxDCtZlls4nk7Zqa2D7ZYZ8HAu7kZQ5ZZ0bRZkZUpPeXZRzZjLZ6kZqRZyHZ9zZzFZ67ZYzZILZipZ1LZtVZD7ZeBpJ0ZDf6fAkJ5SR43JV7xuycYafFrD2L7/B.mp4" -->
+  <button onclick="uploadVideo()">Upload Video</button>
+  <progress id="uploadProgress" value="0" max="100"></progress>
+
+  <script>
+    var YOUR_CLIENT_ID = '67818761375-rgfcuff6ukb5gttn95fglus8uq0fmrgs.apps.googleusercontent.com'; // Replace with your client ID
+    var YOUR_REDIRECT_URI = 'http://localhost:8081'; // Replace with your redirect URI
+
+    var formData = new FormData();
+
+    function uploadVideo() {
+      // Get video file from the hidden input field
+      var videoFileLocation = document.getElementById('videoInput').value;
+
+      // Initiate OAuth 2.0 flow
+      oauth2SignIn();
+
+      // Create a new FormData object
+
+
+// Add the snippet parameters to the FormData object
+formData.append('snippet', JSON.stringify({
+  title: 'Your Video Title',
+  description: 'Your Video Description'
+}));
+
+// Add the status parameters to the FormData object
+formData.append('status', JSON.stringify({
+  privacyStatus: 'private'
+}));
+
+// Add the video file to the FormData object
+// formData.append('video', videoFileLocation);
+
+    }
+
+    function oauth2SignIn() {
+      var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+      var params = {
+        'client_id': YOUR_CLIENT_ID,
+        'redirect_uri': YOUR_REDIRECT_URI,
+        'scope': 'https://www.googleapis.com/auth/youtube.upload',
+        'response_type': 'token'
+      };
+      var queryString = Object.keys(params).map(key => `${key}=${encodeURIComponent(params[key])}`).join('&');
+      var authUrl = `${oauth2Endpoint}?${queryString}`;
+
+      window.location.href = authUrl;
+    }
+
+    // After authorization, handle upload process
+    window.onload = function() {
+      var accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
+      if (accessToken) {
+        var videoFileLocation = document.getElementById('videoInput').value;
+        uploadToYouTube(videoFileLocation, accessToken);
+      }
+    }
+
+    function uploadToYouTube(videoFileLocation, accessToken) {
+      console.log('accessToken=', accessToken);
+
+      $.ajax({
+        url: 'https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status',
+        type: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + accessToken
+        },
+        xhr: function () {
+          var xhr = $.ajaxSettings.xhr();
+          if (xhr.upload) {
+            xhr.upload.onprogress = function (event) {
+              var progressBar = document.getElementById('uploadProgress');
+              if (event.lengthComputable) {
+                var percentComplete = (event.loaded / event.total) * 100;
+                progressBar.value = percentComplete;
+              }
+            };
+          }
+          return xhr;
+        },
+        data: {
+          // Add video metadata here
+          snippet: {
+            title: 'Your Video Title',
+            description: 'Your Video Description'
+          },
+          status: {
+            privacyStatus: 'private'
+          },
+          video: videoFileLocation
+        },
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          console.log('Video uploaded successfully. Video ID:', response.id);
+          alert('Video uploaded successfully. Video ID: ' + response.id);
+        },
+        error: function (xhr) {
+          console.error('Failed to upload video. Status:', xhr.status);
+          alert('Failed to upload video. Status: ' + xhr.status);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
